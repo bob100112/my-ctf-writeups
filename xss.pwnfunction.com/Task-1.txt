@@ -1,7 +1,0 @@
-<svg onload=alert(1337)>
-
-try <script>alert(1337)</script> doesnt work because, as have to use eval() 
-to execute any script code that you've inserted as DOM text
-
-
-https://stackoverflow.com/questions/1197575/can-scripts-be-inserted-with-innerhtml
